@@ -17,3 +17,5 @@ class d4rl_dataset():
     def get_data(self,batch_size=256):
         idx = np.random.choice(self.len, batch_size)
         return self.dataset['observations'][idx], self.dataset['actions'][idx], self.dataset['rewards'][idx], self.dataset['next_observations'][idx], self.dataset['dones'][idx]
+
+

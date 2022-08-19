@@ -2,6 +2,10 @@ import torch
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
+def soft_update(target, source, tau):
+    for target_param, param in zip(target.parameters(), source.parameters()):
+        target_param.data.copy_(target_param.data * (1.0 - tau) + param.data * tau)
+
 def weight_init_Xavier(module):
     if isinstance(module, nn.Linear):
         torch.nn.init.xavier_normal_(module.weight, gain=0.01)
@@ -54,6 +58,24 @@ class Qnet(nn.Module):
         layer = self.relu2(self.fc2(layer))
         qval  = self.fc3(layer)
         return torch.squeeze(qval,dim=-1)
+
+class Det_Policy(nn.Module):
+    def __init__(self,o_dim,a_dim, h_size=256):
+        super(Det_Policy,self).__init__()
+        self.fc1 = nn.Linear(o_dim        , h_size)
+        self.fc2 = nn.Linear(h_size       , h_size)
+        self.fc3 = nn.Linear(h_size       , a_dim)
+        self.relu1 = nn.ReLU()
+        self.relu2 = nn.ReLU()
+        self.tanh  = nn.Tanh()
+
+    def forward(self,o_input:torch.Tensor,repeat=None):
+        if repeat is not None:
+            o_input = extend_and_repeat(o_input, 1, repeat)
+        layer = self.relu1(self.fc1(o_input))
+        layer = self.relu2(self.fc2(layer))
+        action  = self.tanh(self.fc3(layer))
+        return action
 
 
 def extend_and_repeat(tensor, dim, repeat):
