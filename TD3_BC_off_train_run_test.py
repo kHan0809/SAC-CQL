@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 args = get_args()
 
 # env = gym.make("InvertedPendulum-v2")
-env = gym.make("halfcheetah-expert-v2")
+env = gym.make("halfcheetah-medium-expert-v2")
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
 action_max = env.action_space.high[0]
@@ -19,7 +19,7 @@ epi_length = env.spec.max_episode_steps
 
 agent = TD3_Agent(state_dim,action_dim,args)
 agent.init_pi("./model_save/bc/bc_policy50.pt")
-agent.init_q("./model_save/bc_q/bc_q100000.pt")
+agent.init_q("./model_save/bc_q/bc_q_cql100000.pt")
 
 dataset = d4rl_dataset(env.unwrapped)
 
@@ -49,7 +49,7 @@ while local_step <=maximum_step:
   for step in range(5000):
     batch = dataset.get_data()
     local_step += 1
-    agent.train_off(batch)
+    agent.train_off(batch,cql=True)
   episode_step += 1
 
   # q1, q2 = agent.test_q(batch)
@@ -76,3 +76,17 @@ while local_step <=maximum_step:
   #               }, "./model_save/td-bc/td-bc_" + str(episode_step + 1) + ".pt")
 
 
+# [EPI0] : 11265.05
+# [EPI1] : 570.29
+# [EPI2] : 3465.55
+# [EPI3] : 10306.31
+# [EPI4] : 42.15
+# [EPI5] : 3454.02
+# [EPI6] : 9508.15
+# [EPI7] : 436.39
+# [EPI8] : 9273.99
+# [EPI9] : 9469.46
+# [EPI10] : 9131.68
+# [EPI11] : 10794.08
+# [EPI12] : 8497.24
+# [EPI13] : 9396.50

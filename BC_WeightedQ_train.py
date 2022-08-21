@@ -18,14 +18,18 @@ epi_length = env.spec.max_episode_steps
 
 
 agent = BC_agent(state_dim,action_dim,args)
+agent.init_bc("./model_save/bc/bc_"+args.task_name+"_60.pt")
+agent.init_q("./model_save/bc_q/bc_"+args.task_name+"cqlTrue_"+"40000.pt")
 dataset = d4rl_dataset(env.unwrapped)
+
+
 
 maximum_step = 1000000
 local_step = 0
 eval_period = 5
 episode_step = 0
 n_random = 1000
-eval_num=5
+eval_num = 10
 #====cql====
 n_train_step_per_epoch=1000
 
@@ -35,10 +39,10 @@ while local_step <=maximum_step:
   for step in range(n_train_step_per_epoch):
     batch = dataset.get_data()
     local_step += 1
-    agent.train(batch)
+    agent.train_weightedQ(batch)
   episode_step += 1
 
-  #====Eval====
+  # ====Eval====
   if episode_step % eval_period == 0:
     epi_return = []  # 나중에 success까지 포함해야할듯
     for eval_epi in range(eval_num):
@@ -57,59 +61,48 @@ while local_step <=maximum_step:
     print("Epi : ", episode_step)
     print("Mean return  : ", np.mean(epi_return), "Min return", np.min(epi_return), "Max return", np.max(epi_return))
 
-  if episode_step % 20 == 19:
+  if episode_step % 10 == 9:
     torch.save({'policy': agent.bc.state_dict(),
-                }, "./model_save/bc/bc_"+args.task_name+"_"+str(episode_step + 1) + ".pt")
+                }, "./model_save/bc_wq/bc_wq_"+args.task_name+ str(episode_step + 1) + ".pt")
+
 
 #medium-expert
-# [EPI5] : 4465.38
-# [EPI10] : 5156.28
-# [EPI15] : 3261.79
-# [EPI20] : 288.24
-# [EPI25] : 5082.63
-# [EPI30] : 5290.28
-# [EPI35] : 4970.37
-# [EPI40] : 4963.78
-# [EPI45] : 5096.16
-# [EPI50] : 5127.29
-# [EPI55] : 5179.81
-# [EPI60] : 5064.50
-# [EPI65] : 5053.17
-# [EPI70] : 10902.59
-# [EPI75] : 10634.01
-# [EPI80] : 6053.93
-# [EPI85] : 5047.37
-# [EPI90] : 5085.35
-# [EPI95] : 5136.49
 
-# medium
-# [EPI5] : 4557.32
-# [EPI10] : 1872.80
-# [EPI15] : 4787.22
-# [EPI20] : 5092.55
-# [EPI25] : 4893.88
-# [EPI30] : 5184.68
-# [EPI35] : 4974.44
-# [EPI40] : 4915.95
-# [EPI45] : 4935.28
-# [EPI50] : 4872.44
+
+#medium
+# [EPI5] : 3729.93
+# [EPI10] : 4683.90
+# [EPI15] : 4880.29
+# [EPI20] : 4995.83
+# [EPI25] : 5152.09
+# [EPI30] : 5089.73
+# [EPI35] : 5026.14
+# [EPI40] : 5172.80
+# [EPI45] : 5145.51
+# [EPI50] : 4920.03
+# [EPI55] : 5117.37
+# [EPI60] : 5078.40
+# [EPI65] : 5180.81
+# [EPI70] : 5037.74
 
 #expert
-# [EPI5] : 336.94
-# [EPI10] : 310.75
-# [EPI15] : 7859.40
-# [EPI20] : 3642.10
-# [EPI25] : 10856.15
-# [EPI30] : 10611.11
-# [EPI35] : 10951.73
-# [EPI40] : 10701.42
-# [EPI45] : 10801.44
-# [EPI50] : 11013.17
-# [EPI55] : 11044.47
-# [EPI60] : 10912.29
-# [EPI65] : 11053.25
-# [EPI70] : 11056.16
-# [EPI75] : 11043.82
-# [EPI80] : 11216.14
-# [EPI85] : 10810.40
-# [EPI90] : 11004.27
+# [EPI5] : 649.84
+# [EPI10] : 2151.19
+# [EPI15] : 3860.30
+# [EPI20] : 492.21
+# [EPI25] : 5051.66
+# [EPI30] : 10042.76
+# [EPI35] : 8611.61
+# [EPI40] : 6616.41
+# [EPI45] : 10948.23
+# [EPI50] : 10912.86
+# [EPI55] : 10570.31
+# [EPI60] : 10801.76
+# [EPI65] : 11163.10
+# [EPI70] : 11020.28
+# [EPI75] : 11418.70
+# [EPI80] : 11332.31
+# [EPI85] : 11056.12
+# [EPI90] : 11178.14
+# [EPI95] : 11400.97
+# [EPI100] : 11323.55

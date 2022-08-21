@@ -34,13 +34,35 @@ def multiple_action_q_function(forward):
         batch_size = observations.shape[0]
         if actions.ndim == 3 and observations.ndim == 2:
             multiple_actions = True
+            # print(extend_and_repeat(observations, 1, actions.shape[1]).shape)
+            # print(extend_and_repeat(observations, 1, actions.shape[1]))
             observations = extend_and_repeat(observations, 1, actions.shape[1]).reshape(-1, observations.shape[-1])
+            # print(observations.shape)
+            # print(observations)
+            # observations = observations.repeat(actions.shape[1],1)
+            # print(actions.shape)
+            # print(actions)
             actions = actions.reshape(-1, actions.shape[-1])
+        # print("==============interstate")
+        # print(observations.shape)
+        # print(observations[:3])
+        # print("===============interact")
+        # print(actions.shape)
+        # print(actions[:3])
+        # print("===============interq")
         q_values = forward(self, observations, actions, **kwargs)
+        # print(q_values.shape)
+        # print(q_values[:3])
+
+
         if multiple_actions:
             q_values = q_values.reshape(batch_size, -1)
+            # print(q_values.shape)
+            # print(q_values)
         return q_values
     return wrapped
+
+
 
 class Qnet(nn.Module):
     def __init__(self, o_dim, a_dim, h_size=256):
@@ -120,3 +142,18 @@ class Policy(nn.Module):
 
 
 
+# def multiple_action_q_function__(forward):
+#     # Forward the q function with multiple actions on each state, to be used as a decorator
+#     def wrapped(self, observations, actions, **kwargs):
+#         multiple_actions = False
+#         batch_size = observations.shape[0]
+#         if actions.ndim == 3 and observations.ndim == 2:
+#             multiple_actions = True
+#             print(observations.repeat(actions.shape[1],1))
+#             observations = extend_and_repeat(observations, 1, actions.shape[1]).reshape(-1, observations.shape[-1])
+#             actions = actions.reshape(-1, actions.shape[-1])
+#         q_values = forward(self, observations, actions, **kwargs)
+#         if multiple_actions:
+#             q_values = q_values.reshape(batch_size, -1)
+#         return q_values
+#     return wrapped

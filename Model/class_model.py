@@ -430,9 +430,9 @@ class TD3_Agent:
 
             state_batch = torch.FloatTensor(state_batch).to(self.args.device_train)
             action_batch = torch.FloatTensor(action_batch).to(self.args.device_train)
-            reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train)
+            reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train).reshape(state_batch.shape[0])
             next_state_batch = torch.FloatTensor(next_state_batch).to(self.args.device_train)
-            done_batch = torch.FloatTensor(done_batch).to(self.args.device_train)
+            done_batch = torch.FloatTensor(done_batch).to(self.args.device_train).reshape(state_batch.shape[0])
 
             self.q_train(state_batch, action_batch,reward_batch,next_state_batch,done_batch)
 
@@ -445,14 +445,14 @@ class TD3_Agent:
 
             self.update_count += 1
 
-    def train_off(self, batch,cql=False):
+    def train_off(self, batch, cql=False):
         state_batch, action_batch, reward_batch, next_state_batch, done_batch = batch
 
         state_batch = torch.FloatTensor(state_batch).to(self.args.device_train)
         action_batch = torch.FloatTensor(action_batch).to(self.args.device_train)
-        reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train).unsqueeze(1)
+        reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train)
         next_state_batch = torch.FloatTensor(next_state_batch).to(self.args.device_train)
-        done_batch = torch.FloatTensor(done_batch).to(self.args.device_train).unsqueeze(1)
+        done_batch = torch.FloatTensor(done_batch).to(self.args.device_train)
         if cql:
             self.q_train_cql(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
         else:
@@ -460,10 +460,17 @@ class TD3_Agent:
 
         if (self.update_count % self.update_pi) == 0:
             self.pi_train(state_batch)
+            # with torch.no_grad():
+            #     soft_update(self.target_q1, self.q1, self.tau)
+            #     soft_update(self.target_q2, self.q2, self.tau)
+            #     soft_update(self.target_pi, self.pi, self.tau)
+
+        if (self.update_count % 2.0) == 0:
             with torch.no_grad():
                 soft_update(self.target_q1, self.q1, self.tau)
                 soft_update(self.target_q2, self.q2, self.tau)
                 soft_update(self.target_pi, self.pi, self.tau)
+
         self.update_count += 1
 
     def train_Only_Q(self, batch,cql=False):
@@ -471,11 +478,10 @@ class TD3_Agent:
 
         state_batch = torch.FloatTensor(state_batch).to(self.args.device_train)
         action_batch = torch.FloatTensor(action_batch).to(self.args.device_train)
-        reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train).unsqueeze(1)
+        reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train)
         next_state_batch = torch.FloatTensor(next_state_batch).to(self.args.device_train)
-        done_batch = torch.FloatTensor(done_batch).to(self.args.device_train).unsqueeze(1)
+        done_batch = torch.FloatTensor(done_batch).to(self.args.device_train)
 
-        self.q_train(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
         if cql:
             self.q_train_cql(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
         else:
@@ -496,12 +502,13 @@ class TD3_Agent:
         self.q1_opt.zero_grad()
         self.q2_opt.zero_grad()
         q_val1,q_val2 = self.q1(state_batch,action_batch), self.q2(state_batch,action_batch)
+        # reward_batch, done_batch = reward_batch.reshape(q_val1.shape[0]), done_batch.reshape(q_val1.shape[0])
         with torch.no_grad():
             noise = (torch.randn_like(action_batch) * 0.2).clamp(-0.5, 0.5)
             next_action_batch = (self.target_pi(next_state_batch) + noise).clamp(-1.,1.)
             next_q_val1, next_q_val2 = self.target_q1(next_state_batch,next_action_batch), self.target_q2(next_state_batch,next_action_batch)
             minq = torch.min(next_q_val1,next_q_val2)
-            target_ = reward_batch.squeeze(1) + self.gamma*(1-done_batch.squeeze(1))*minq
+            target_ = reward_batch + self.gamma*(1-done_batch)*minq
 
         q1_loss = F.mse_loss(target_,q_val1)
         q2_loss = F.mse_loss(target_,q_val2)
@@ -520,7 +527,7 @@ class TD3_Agent:
             next_action_batch = (self.target_pi(next_state_batch) + noise).clamp(-1.,1.)
             next_q_val1, next_q_val2 = self.target_q1(next_state_batch,next_action_batch), self.target_q2(next_state_batch,next_action_batch)
             minq = torch.min(next_q_val1,next_q_val2)
-            target_ = reward_batch.squeeze(1) + self.gamma*(1-done_batch.squeeze(1))*minq
+            target_ = reward_batch + self.gamma*(1-done_batch)*minq
 
         q1_loss = F.mse_loss(target_,q_val1)
         q2_loss = F.mse_loss(target_,q_val2)
@@ -535,6 +542,7 @@ class TD3_Agent:
         cql_current_actions = self.pi(state_batch, repeat=self.cql_n_actions)
         cql_next_actions    = self.pi(next_state_batch, repeat=self.cql_n_actions)
         cql_current_actions, cql_next_actions = cql_current_actions.detach(), cql_next_actions.detach()
+
 
 
         cql_q1_rand = self.q1(state_batch, cql_random_actions)
@@ -610,6 +618,22 @@ class BC_agent:
         self.bc = Det_Policy(o_dim,a_dim,args.BC_hidden_size).to(args.device_train)
         self.bc_opt = torch.optim.Adam(self.bc.parameters(), lr=self.lr)
 
+        self.hidden_size = args.SAC_hidden_size
+        #Define networks
+        self.q1 = Qnet(self.o_dim, self.a_dim, self.hidden_size).to(args.device_train)
+        self.q2 = Qnet(self.o_dim, self.a_dim, self.hidden_size).to(args.device_train)
+        self.n_actions = 50
+        self.update_count = 0
+        self.update_pi = args.update_pi_ratio
+
+    def init_bc(self,dir):
+        self.bc.load_state_dict(torch.load(dir)['policy'])
+    def init_q(self,dir):
+        self.q1.load_state_dict(torch.load(dir)['q1'])
+        self.q2.load_state_dict(torch.load(dir)['q2'])
+        self.target_q1 = deepcopy(self.q1)
+        self.target_q2 = deepcopy(self.q2)
+
     def select_action(self, o, eval=False):
         action  = self.bc(torch.FloatTensor(o).to(self.args.device_train))
         return action.cpu().detach().numpy()[0]
@@ -628,3 +652,180 @@ class BC_agent:
         action_loss = F.mse_loss(pred_action,action_batch)
         action_loss.backward()
         self.bc_opt.step()
+
+    def train_weightedQ(self,batch,cql=False):
+        state_batch, action_batch, reward_batch, next_state_batch, done_batch = batch
+
+        state_batch = torch.FloatTensor(state_batch).to(self.args.device_train)
+        action_batch = torch.FloatTensor(action_batch).to(self.args.device_train)
+        reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train)
+        next_state_batch = torch.FloatTensor(next_state_batch).to(self.args.device_train)
+        done_batch = torch.FloatTensor(done_batch).to(self.args.device_train)
+
+
+        self.train_bc(state_batch,action_batch,reward_batch,next_state_batch,done_batch)
+
+        if cql:
+            self.q_train_cql(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+        else:
+            self.q_train_cql(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+
+        if (self.update_count % self.update_pi) == 0:
+            self.pi_train(state_batch)
+
+        if (self.update_count % 2.0) == 0:
+            with torch.no_grad():
+                soft_update(self.target_q1, self.q1, self.tau)
+                soft_update(self.target_q2, self.q2, self.tau)
+
+        self.update_count += 1
+
+
+
+    def train_bc(self,state_batch, action_batch, reward_batch, next_state_batch, done_batch):
+        self.bc.train()
+        # 방법1 uniform norm. 방법2 batch norm
+        random_actions = action_batch.new_empty((state_batch.shape[0], self.n_actions, self.a_dim),requires_grad=False).uniform_(-1, 1)
+        with torch.no_grad():
+            q_random_val1,q_random_val2 = self.q1(state_batch,random_actions), self.q2(state_batch,random_actions) #state는 그대로 [256,17] action은 [256,10,6이 들어가면된다.]
+            min_q = torch.min(q_random_val1, q_random_val2).mean(dim=1)
+
+            q_val1, q_val2 = self.q1(state_batch, action_batch), self.q2(state_batch, action_batch)
+
+            weight = torch.min((q_val1-min_q)/abs(min_q),(q_val2-min_q)/abs(min_q)).clamp(0.0,2.0)
+
+        self.bc_opt.zero_grad()
+        pred_action = self.bc(state_batch)
+        action_loss = torch.mean(((pred_action - action_batch)**2)*weight.reshape(-1, 1))
+        action_loss.backward()
+        self.bc_opt.step()
+
+
+    def q_train(self,state_batch,action_batch,reward_batch,next_state_batch,done_batch):
+        self.q1_opt.zero_grad()
+        self.q2_opt.zero_grad()
+        q_val1,q_val2 = self.q1(state_batch,action_batch), self.q2(state_batch,action_batch)
+        # reward_batch, done_batch = reward_batch.reshape(q_val1.shape[0]), done_batch.reshape(q_val1.shape[0])
+        with torch.no_grad():
+            noise = (torch.randn_like(action_batch) * 0.2).clamp(-0.5, 0.5)
+            next_action_batch = (self.bc(next_state_batch) + noise).clamp(-1.,1.)
+            next_q_val1, next_q_val2 = self.target_q1(next_state_batch,next_action_batch), self.target_q2(next_state_batch,next_action_batch)
+            minq = torch.min(next_q_val1,next_q_val2)
+            target_ = reward_batch + self.gamma*(1-done_batch)*minq
+
+        q1_loss = F.mse_loss(target_,q_val1)
+        q2_loss = F.mse_loss(target_,q_val2)
+
+        q_loss = q1_loss + q2_loss
+        q_loss.backward()
+        self.q1_opt.step()
+        self.q2_opt.step()
+
+    def q_train_cql(self,state_batch,action_batch,reward_batch,next_state_batch,done_batch):
+        self.q1_opt.zero_grad()
+        self.q2_opt.zero_grad()
+        q_val1,q_val2 = self.q1(state_batch,action_batch), self.q2(state_batch,action_batch)
+        with torch.no_grad():
+            noise = (torch.randn_like(action_batch) * 0.2).clamp(-0.5, 0.5)
+            next_action_batch = (self.bc(next_state_batch) + noise).clamp(-1.,1.)
+            next_q_val1, next_q_val2 = self.target_q1(next_state_batch,next_action_batch), self.target_q2(next_state_batch,next_action_batch)
+            minq = torch.min(next_q_val1,next_q_val2)
+            target_ = reward_batch + self.gamma*(1-done_batch)*minq
+
+        q1_loss = F.mse_loss(target_,q_val1)
+        q2_loss = F.mse_loss(target_,q_val2)
+
+
+        #====여까지는 그냥 SAC랑 같음
+        batch_size = action_batch.shape[0]
+        action_dim = action_batch.shape[-1]
+        cql_random_actions = action_batch.new_empty((batch_size, self.cql_n_actions, action_dim),requires_grad=False).uniform_(-1, 1)
+
+
+        cql_current_actions = self.bc(state_batch, repeat=self.cql_n_actions)
+        cql_next_actions    = self.bc(next_state_batch, repeat=self.cql_n_actions)
+        cql_current_actions, cql_next_actions = cql_current_actions.detach(), cql_next_actions.detach()
+
+
+
+        cql_q1_rand = self.q1(state_batch, cql_random_actions)
+        cql_q2_rand = self.q2(state_batch, cql_random_actions)
+        cql_q1_current_actions = self.q1(state_batch, cql_current_actions)
+        cql_q2_current_actions = self.q2(state_batch, cql_current_actions)
+        cql_q1_next_actions = self.q1(state_batch, cql_next_actions)
+        cql_q2_next_actions = self.q2(state_batch , cql_next_actions)
+
+        cql_cat_q1 = torch.cat(
+            [cql_q1_rand, torch.unsqueeze(q_val1, 1), cql_q1_next_actions, cql_q1_current_actions], dim=1
+        )
+        cql_cat_q2 = torch.cat(
+            [cql_q2_rand, torch.unsqueeze(q_val2, 1), cql_q2_next_actions, cql_q2_current_actions], dim=1
+        )
+
+        cql_qf1_ood = torch.logsumexp(cql_cat_q1 / self.cql_temp, dim=1) * self.cql_temp
+        cql_qf2_ood = torch.logsumexp(cql_cat_q2 / self.cql_temp, dim=1) * self.cql_temp
+
+        """Subtract the log likelihood of data"""
+        cql_qf1_diff = torch.clamp(
+            cql_qf1_ood - q_val1,
+            self.cql_clip_diff_min,
+            self.cql_clip_diff_max,
+        ).mean()
+        cql_qf2_diff = torch.clamp(
+            cql_qf2_ood - q_val2,
+            self.cql_clip_diff_min,
+            self.cql_clip_diff_max,
+        ).mean()
+
+
+        if self.cql_lagrange:
+            alpha_prime = torch.clamp(torch.exp(self.log_alpha_prime), min=0.0, max=1000000.0)
+            cql_min_qf1_loss = alpha_prime * self.cql_min_q_weight * (
+                        cql_qf1_diff - self.cql_target_action_gap)
+            cql_min_qf2_loss = alpha_prime * self.cql_min_q_weight * (
+                        cql_qf2_diff - self.cql_target_action_gap)
+
+            self.alpha_prime_opt.zero_grad()
+            alpha_prime_loss = (-cql_min_qf1_loss - cql_min_qf2_loss) * 0.5
+            alpha_prime_loss.backward(retain_graph=True)
+            self.alpha_prime_opt.step()
+        else:
+            cql_min_qf1_loss = cql_qf1_diff * self.cql_min_q_weight
+            cql_min_qf2_loss = cql_qf2_diff * self.cql_min_q_weight
+
+        q1_loss_add_cql =  q1_loss + cql_min_qf1_loss
+        q2_loss_add_cql =  q2_loss + cql_min_qf2_loss
+
+
+        q1_loss_add_cql.backward(retain_graph=True)
+        self.q1_opt.step()
+        q2_loss_add_cql.backward()
+        self.q2_opt.step()
+
+
+
+    #
+    #
+    # def train_weightedQ(self,batch):
+    #     self.bc.train()
+    #     state_batch, action_batch, reward_batch, next_state_batch, done_batch = batch
+    #     state_batch = torch.FloatTensor(state_batch).to(self.args.device_train)
+    #     action_batch = torch.FloatTensor(action_batch).to(self.args.device_train)
+    #     # 방법1 uniform norm. 방법2 batch norm
+    #     random_actions = action_batch.new_empty((state_batch.shape[0], self.n_actions, self.a_dim),requires_grad=False).uniform_(-1, 1)
+    #     with torch.no_grad():
+    #         q_random_val1,q_random_val2 = self.q1(state_batch,random_actions), self.q2(state_batch,random_actions) #state는 그대로 [256,17] action은 [256,10,6이 들어가면된다.]
+    #         min_q = torch.min(q_random_val1, q_random_val2).mean(dim=1)
+    #
+    #         q_val1, q_val2 = self.q1(state_batch, action_batch), self.q2(state_batch, action_batch)
+    #
+    #         weight = torch.min((q_val1-min_q)/abs(min_q),(q_val2-min_q)/abs(min_q)).clamp(0.0,2.0)
+    #
+    #     self.bc_opt.zero_grad()
+    #     pred_action = self.bc(state_batch)
+    #     action_loss = torch.mean(((pred_action - action_batch)**2)*weight.reshape(-1, 1))
+    #     action_loss.backward()
+    #     self.bc_opt.step()
+
+
+

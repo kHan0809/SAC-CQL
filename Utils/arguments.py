@@ -2,7 +2,7 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task_name', default="drawer-open-v2-goal-observable", help='box-close-v2-goal-observable drawer-open-v2-goal-observable drawer-close-v2-goal-observable')
+    parser.add_argument('--task_name', default="halfcheetah-random-v2", help="halfcheetah-medium-expert-v2 halfcheetah-medium-v2 halfcheetah-expert-v2")
 
     parser.add_argument('--device_eval',  default="cpu")
     parser.add_argument('--device_train', default="cuda")
@@ -18,7 +18,7 @@ def get_args():
 
 
     #====================TD3 hyperparameter======================
-    parser.add_argument('--update_pi_ratio', type=int, default=2)
+    parser.add_argument('--update_pi_ratio', type=int, default=100)
 
     #===================BCO hyperparameter=======================
     parser.add_argument('--BC_lr', type=float, default=3e-4)

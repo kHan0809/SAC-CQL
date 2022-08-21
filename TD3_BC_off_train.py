@@ -19,7 +19,7 @@ epi_length = env.spec.max_episode_steps
 
 agent = TD3_Agent(state_dim,action_dim,args)
 agent.init_pi("./model_save/bc/bc_policy50.pt")
-agent.init_q("./model_save/bc_q/bc_q100000.pt")
+agent.init_q("./model_save/bc_q/bc_q_cql100000.pt")
 
 
 dataset = d4rl_dataset(env.unwrapped)
@@ -36,7 +36,7 @@ while local_step <=maximum_step:
   for step in range(n_train_step_per_epoch):
     batch = dataset.get_data()
     local_step += 1
-    agent.train_off(batch)
+    agent.train_off(batch,cql=True)
   episode_step += 1
 
   # q1, q2 = agent.test_q(batch)

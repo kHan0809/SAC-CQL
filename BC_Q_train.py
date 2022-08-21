@@ -10,7 +10,7 @@ from Utils.utils import d4rl_dataset
 args = get_args()
 
 # env = gym.make("InvertedPendulum-v2")
-env = gym.make("halfcheetah-expert-v2")
+env = gym.make(args.task_name)
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
 action_max = env.action_space.high[0]
@@ -18,7 +18,7 @@ epi_length = env.spec.max_episode_steps
 
 
 agent = TD3_Agent(state_dim,action_dim,args)
-agent.init_pi("./model_save/bc/bc_policy50.pt")
+agent.init_pi("./model_save/bc/bc_"+args.task_name+"_100.pt")
 
 dataset = d4rl_dataset(env.unwrapped)
 
@@ -27,6 +27,7 @@ local_step = 0
 eval_period = 5
 episode_step = 0
 n_random = 1000
+cql = True
 #====cql====
 
 while local_step <=maximum_step:
@@ -34,14 +35,14 @@ while local_step <=maximum_step:
 
   batch = dataset.get_data()
   local_step += 1
-  agent.train_Only_Q(batch,cql=True)
+  agent.train_Only_Q(batch,cql=cql)
 
   if local_step % 1000 == 999:
       batch = dataset.get_data()
       q1,q2 = agent.test_q(batch)
-      print("[local_step] :",local_step+1,"Q1 : ",sum(q1)/batch[0].shape[0],"Q2 : ",sum(q2)/batch[0].shape[0])
+      print("[local_step] :",local_step+1, "Q1 : ",sum(q1)/batch[0].shape[0],"Q2 : ",sum(q2)/batch[0].shape[0])
 
   if local_step % 20000 == 19999:
     torch.save({'q1': agent.q1.state_dict(),
                 'q2': agent.q2.state_dict(),
-                }, "./model_save/bc_q/bc_q_cql" + str(local_step + 1) + ".pt")
+                }, "./model_save/bc_q/bc_"+args.task_name+"cql"+str(cql)+"_"+ str(local_step + 1) + ".pt")
