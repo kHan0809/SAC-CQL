@@ -18,10 +18,10 @@ def get_args():
 
 
     #====================TD3 hyperparameter======================
-    parser.add_argument('--update_pi_ratio', type=int, default=100)
+    parser.add_argument('--update_pi_ratio', type=int, default=250000)
 
     #===================BCO hyperparameter=======================
-    parser.add_argument('--BC_lr', type=float, default=3e-4)
+    parser.add_argument('--BC_lr', type=float, default=3e-4, help="3e-4")
     parser.add_argument('--BC_hidden_size', type=int, default=256)
 
 

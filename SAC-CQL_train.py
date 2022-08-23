@@ -10,7 +10,7 @@ from Utils.utils import d4rl_dataset
 args = get_args()
 
 # env = gym.make("InvertedPendulum-v2")
-env = gym.make("halfcheetah-medium-v2")
+env = gym.make("halfcheetah-random-v2")
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
 action_max = env.action_space.high[0]
