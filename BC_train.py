@@ -57,9 +57,10 @@ while local_step <=maximum_step:
     print("Epi : ", episode_step)
     print("Mean return  : ", np.mean(epi_return), "Min return", np.min(epi_return), "Max return", np.max(epi_return))
 
-  # if episode_step % 20 == 19:
-  #   torch.save({'policy': agent.bc.state_dict(),
-  #               }, "./model_save/bc/bc_"+args.task_name+"_"+str(episode_step + 1) + ".pt")
+  if episode_step % 20 == 19:
+    torch.save({'policy': agent.bc.state_dict(),
+                'log_alpha' : agent.log_alpha,
+                }, "./model_save/bc/bc_"+args.task_name+"_"+str(episode_step + 1) + ".pt")
 
 #medium-expert
 # [EPI5] : 4465.38

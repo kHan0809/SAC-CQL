@@ -17,8 +17,8 @@ action_max = env.action_space.high[0]
 epi_length = env.spec.max_episode_steps
 
 
-agent = TD3_Agent(state_dim,action_dim,args)
-agent.init_pi("./model_save/bc/bc_"+args.task_name+"_100.pt")
+agent = BC_agent(state_dim,action_dim,args)
+agent.init_bc("./model_save/bc/bc_"+args.task_name+"_80.pt")
 #agent.init_pi("./model_save/bc_wq/bc_wq_halfcheetah-random-v2_600__123.pt")
 
 dataset = d4rl_dataset(env.unwrapped)
@@ -46,4 +46,4 @@ while local_step <=maximum_step:
   if local_step % 20000 == 19999:
     torch.save({'q1': agent.q1.state_dict(),
                 'q2': agent.q2.state_dict(),
-                }, "./model_save/bc_q_test/bc_"+args.task_name+"cql"+str(cql)+"_"+ str(local_step + 1) + ".pt")
+                }, "./model_save/bc_q/bc_"+args.task_name+"cql"+str(cql)+"_"+ str(local_step + 1) + ".pt")
