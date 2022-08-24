@@ -46,4 +46,4 @@ while local_step <=maximum_step:
   if local_step % 20000 == 19999:
     torch.save({'q1': agent.q1.state_dict(),
                 'q2': agent.q2.state_dict(),
-                }, "./model_save/bc_q_test/bc_"+args.task_name+"cql"+str(cql)+"_"+ str(local_step + 1) + ".pt")
+                }, "./model_save/bc_q/bc_"+args.task_name+"cql"+str(cql)+"_"+ str(local_step + 1) + ".pt")

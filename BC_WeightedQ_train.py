@@ -65,7 +65,7 @@ while local_step <=maximum_step:
 
   if episode_step % 20 == 19:
     torch.save({'policy': agent.bc.state_dict(),
-                }, "./model_save/bc_wq_test/bc_wq_"+args.task_name+"_"+ str(episode_step + 1) + ".pt")
+                }, "./model_save/bc_wq/bc_wq_"+args.task_name+"_"+ str(episode_step + 1) + ".pt")
 
 
 #medium-expert
