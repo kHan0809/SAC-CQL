@@ -60,7 +60,7 @@ while local_step <=maximum_step:
   if episode_step % 20 == 19:
     torch.save({'policy': agent.bc.state_dict(),
                 'log_alpha' : agent.log_alpha,
-                }, "./model_save/bc/bc_"+args.task_name+"_"+str(episode_step + 1) + ".pt")
+                }, "./model_save/bc/bc2_"+args.task_name+"_"+str(episode_step + 1) + ".pt")
 
 #medium-expert
 # [EPI5] : 4465.38

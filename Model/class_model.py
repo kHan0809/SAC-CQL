@@ -203,7 +203,6 @@ class SAC_CQL_Agent:
 
     def init_pi(self,dir):
         self.pi.load_state_dict(torch.load(dir)['policy'])
-        self.target_pi = deepcopy(self.pi)
 
     def init_q(self,dir):
         self.q1.load_state_dict(torch.load(dir)['q1'])
@@ -626,7 +625,6 @@ class BC_agent:
         self.lr = args.BC_lr
         self.hidden_size = args.SAC_hidden_size
         self.bc = Policy(self.o_dim, self.a_dim,self.hidden_size).to(args.device_train)
-        self.target_bc = deepcopy(self.bc)
         self.bc_opt = torch.optim.Adam(self.bc.parameters(), lr=self.lr)
 
         self.log_alpha = torch.tensor(0.0, requires_grad=True, device=args.device_train)
@@ -663,7 +661,6 @@ class BC_agent:
 
     def init_bc(self,dir):
         self.bc.load_state_dict(torch.load(dir)['policy'])
-        self.target_bc = deepcopy(self.bc)
         self.log_alpha = torch.load(dir)['log_alpha']
         self.alpha_opt = torch.optim.Adam([self.log_alpha], lr=self.lr)
 
@@ -698,7 +695,7 @@ class BC_agent:
     def alpha_train(self,state_batch):
         self.alpha_opt.zero_grad()
         _, log_pi = self.bc(state_batch)
-        target_entropy = -self.a_dim
+        target_entropy = -(self.a_dim/2.0)
         alpha_loss = (torch.exp(self.log_alpha)*(-log_pi - target_entropy)).mean()
         alpha_loss.backward()
         self.alpha_opt.step()
@@ -748,7 +745,6 @@ class BC_agent:
             with torch.no_grad():
                 soft_update(self.target_q1, self.q1, self.tau)
                 soft_update(self.target_q2, self.q2, self.tau)
-                hard_update(self.target_bc, self.bc)
         self.update_count += 1
 
 
@@ -781,7 +777,7 @@ class BC_agent:
         # reward_batch, done_batch = reward_batch.reshape(q_val1.shape[0]), done_batch.reshape(q_val1.shape[0])
         with torch.no_grad():
             noise = (torch.randn_like(action_batch) * 0.2).clamp(-0.5, 0.5)
-            next_action_batch = (self.target_bc(next_state_batch) + noise).clamp(-1.,1.)
+            next_action_batch = (self.bc(next_state_batch) + noise).clamp(-1.,1.)
             next_q_val1, next_q_val2 = self.target_q1(next_state_batch,next_action_batch), self.target_q2(next_state_batch,next_action_batch)
             minq = torch.min(next_q_val1,next_q_val2)
             target_ = reward_batch + self.gamma*(1-done_batch)*minq
@@ -799,7 +795,7 @@ class BC_agent:
         self.q2_opt.zero_grad()
         q_val1,q_val2 = self.q1(state_batch,action_batch), self.q2(state_batch,action_batch)
         with torch.no_grad():
-            next_action_batch, next_log_pi = self.target_bc(next_state_batch)
+            next_action_batch, next_log_pi = self.bc(next_state_batch)
             next_q_val1, next_q_val2 = self.target_q1(next_state_batch,next_action_batch), self.target_q2(next_state_batch,next_action_batch)
             minq = torch.min(next_q_val1,next_q_val2)
             if self.backup_entropy:

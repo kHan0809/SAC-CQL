@@ -18,8 +18,8 @@ epi_length = env.spec.max_episode_steps
 
 
 agent = BC_agent(state_dim,action_dim,args)
-agent.init_bc("./model_save/bc/bc_"+args.task_name+"_80.pt")
-agent.init_q("./model_save/bc_q/bc_"+args.task_name+"cqlTrue_"+"100000.pt")
+agent.init_bc("./model_save/bc/bc2_"+args.task_name+"_80.pt")
+agent.init_q("./model_save/bc_q/bc2_"+args.task_name+"cqlTrue_"+"60000.pt")
 #agent.init_bc("./model_save/bc_wq/bc_wq_halfcheetah-random-v2_600__123.pt")
 #agent.init_q("./model_save/bc_q_test/bc_"+args.task_name+"cqlTrue_"+"100000.pt")
 dataset = d4rl_dataset(env.unwrapped)
@@ -62,10 +62,10 @@ while local_step <=maximum_step:
     print("==================[Eval]====================")
     print("Epi : ", episode_step)
     print("Mean return  : ", np.mean(epi_return), "Min return", np.min(epi_return), "Max return", np.max(epi_return))
-
-  if episode_step % 20 == 19:
-    torch.save({'policy': agent.bc.state_dict(),
-                }, "./model_save/bc_wq/bc_wq_"+args.task_name+"_"+ str(episode_step + 1) + ".pt")
+  #
+  # if episode_step % 20 == 19:
+  #   torch.save({'policy': agent.bc.state_dict(),
+  #               }, "./model_save/bc_wq/bc_wq_"+args.task_name+"_"+ str(episode_step + 1) + ".pt")
 
 #medium-expert
 
