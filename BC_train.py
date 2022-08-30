@@ -20,7 +20,7 @@ epi_length = env.spec.max_episode_steps
 agent = BC_agent(state_dim,action_dim,args)
 dataset = d4rl_dataset(env.unwrapped)
 
-maximum_step = 1000000
+maximum_step = 100001
 local_step = 0
 eval_period = 5
 episode_step = 0
@@ -60,7 +60,7 @@ while local_step <=maximum_step:
   if episode_step % 20 == 19:
     torch.save({'policy': agent.bc.state_dict(),
                 'log_alpha' : agent.log_alpha,
-                }, "./model_save/bc/bc2_"+args.task_name+"_"+str(episode_step + 1) + ".pt")
+                }, "./model_save/bc/bc1_"+args.task_name+"_"+str(episode_step + 1) + ".pt")
 
 #medium-expert
 # [EPI5] : 4465.38

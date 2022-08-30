@@ -18,12 +18,12 @@ epi_length = env.spec.max_episode_steps
 
 
 agent = BC_agent(state_dim,action_dim,args)
-agent.init_bc("./model_save/bc/bc2_"+args.task_name+"_80.pt")
+agent.init_bc("./model_save/bc/bc1_"+args.task_name+"_40.pt")
 #agent.init_pi("./model_save/bc_wq/bc_wq_halfcheetah-random-v2_600__123.pt")
 
 dataset = d4rl_dataset(env.unwrapped)
 
-maximum_step = 100000
+maximum_step = 60001
 local_step = 0
 eval_period = 5
 episode_step = 0
@@ -43,7 +43,7 @@ while local_step <=maximum_step:
       q1,q2 = agent.test_q(batch)
       print("[local_step] :",local_step+1, "Q1 : ",sum(q1)/batch[0].shape[0],"Q2 : ",sum(q2)/batch[0].shape[0])
 
-  if local_step % 20000 == 19999:
-    torch.save({'q1': agent.q1.state_dict(),
-                'q2': agent.q2.state_dict(),
-                }, "./model_save/bc_q/bc2_"+args.task_name+"cql"+str(cql)+"_"+ str(local_step + 1) + ".pt")
+  # if local_step % 20000 == 19999:
+  #   torch.save({'q1': agent.q1.state_dict(),
+  #               'q2': agent.q2.state_dict(),
+  #               }, "./model_save/bc_q/bc1_"+args.task_name+"cql"+str(cql)+"_"+ str(local_step + 1) + ".pt")

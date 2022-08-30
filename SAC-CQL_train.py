@@ -10,7 +10,7 @@ from Utils.utils import d4rl_dataset
 args = get_args()
 
 # env = gym.make("InvertedPendulum-v2")
-env = gym.make("halfcheetah-random-v2")
+env = gym.make("halfcheetah-medium-v2")
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
 action_max = env.action_space.high[0]
@@ -52,6 +52,11 @@ while local_step <=maximum_step:
       if done:
         break
     print("[EPI%d] : %.2f"%(episode_step, total_reward))
+
+
+    batch = dataset.get_data()
+    q1, q2 = agent.test_q(batch)
+    print("[local_step] :", local_step + 1, "Q1 : ", sum(q1) / batch[0].shape[0], "Q2 : ",sum(q2) / batch[0].shape[0])
 
   # if episode_step % 200 == 199:
   #   torch.save({'policy': agent.pi.state_dict(),
@@ -116,3 +121,50 @@ while local_step <=maximum_step:
 # [EPI265] : 5659.49
 # [EPI270] : 5636.44
 # [EPI275] : 5571.46
+
+#Medium
+# [Return mean] :  4770.215598305823
+# [EPI5] : -71.79
+# [local_step] : 5001 Q1 :  tensor(96.8751, device='cuda:0') Q2 :  tensor(96.9181, device='cuda:0')
+# [EPI10] : -729.93
+# [local_step] : 10001 Q1 :  tensor(181.2735, device='cuda:0') Q2 :  tensor(181.3844, device='cuda:0')
+# [EPI15] : -168.59
+# [local_step] : 15001 Q1 :  tensor(236.1676, device='cuda:0') Q2 :  tensor(236.4753, device='cuda:0')
+# [EPI20] : -164.32
+# [local_step] : 20001 Q1 :  tensor(273.3922, device='cuda:0') Q2 :  tensor(273.2821, device='cuda:0')
+# [EPI25] : 175.14
+# [local_step] : 25001 Q1 :  tensor(305.7065, device='cuda:0') Q2 :  tensor(305.5658, device='cuda:0')
+# [EPI30] : 401.15
+# [local_step] : 30001 Q1 :  tensor(320.3622, device='cuda:0') Q2 :  tensor(320.5507, device='cuda:0')
+# [EPI35] : 4144.52
+# [local_step] : 35001 Q1 :  tensor(335.2350, device='cuda:0') Q2 :  tensor(334.9603, device='cuda:0')
+# [EPI40] : 5085.33
+# [local_step] : 40001 Q1 :  tensor(345.1120, device='cuda:0') Q2 :  tensor(345.1349, device='cuda:0')
+# [EPI45] : 5330.91
+# [local_step] : 45001 Q1 :  tensor(352.8109, device='cuda:0') Q2 :  tensor(352.9360, device='cuda:0')
+# [EPI50] : 4970.47
+# [local_step] : 50001 Q1 :  tensor(353.9359, device='cuda:0') Q2 :  tensor(354.0067, device='cuda:0')
+# [EPI55] : 5429.06
+# [local_step] : 55001 Q1 :  tensor(358.9911, device='cuda:0') Q2 :  tensor(359.0433, device='cuda:0')
+# [EPI60] : 5298.67
+# [local_step] : 60001 Q1 :  tensor(361.8062, device='cuda:0') Q2 :  tensor(361.6589, device='cuda:0')
+# [EPI65] : 5433.67
+# [local_step] : 65001 Q1 :  tensor(365.3981, device='cuda:0') Q2 :  tensor(365.3272, device='cuda:0')
+# [EPI70] : 5475.62
+# [local_step] : 70001 Q1 :  tensor(362.9278, device='cuda:0') Q2 :  tensor(362.8710, device='cuda:0')
+# [EPI75] : 5424.34
+# [local_step] : 75001 Q1 :  tensor(361.0743, device='cuda:0') Q2 :  tensor(361.0407, device='cuda:0')
+# [EPI80] : 5431.59
+# [local_step] : 80001 Q1 :  tensor(363.2005, device='cuda:0') Q2 :  tensor(363.0135, device='cuda:0')
+# [EPI85] : 5483.38
+# [local_step] : 85001 Q1 :  tensor(363.8866, device='cuda:0') Q2 :  tensor(363.8287, device='cuda:0')
+# [EPI90] : 5472.43
+# [local_step] : 90001 Q1 :  tensor(363.6799, device='cuda:0') Q2 :  tensor(363.9665, device='cuda:0')
+# [EPI95] : 5495.46
+# [local_step] : 95001 Q1 :  tensor(357.1365, device='cuda:0') Q2 :  tensor(357.3423, device='cuda:0')
+# [EPI100] : 5668.96
+# [local_step] : 100001 Q1 :  tensor(364.9618, device='cuda:0') Q2 :  tensor(364.9307, device='cuda:0')
+# [EPI105] : 5590.54
+# [local_step] : 105001 Q1 :  tensor(361.3735, device='cuda:0') Q2 :  tensor(361.1693, device='cuda:0')
+# [EPI110] : 5622.35
+# [local_step] : 110001 Q1 :  tensor(362.1713, device='cuda:0') Q2 :  tensor(362.4529, device='cuda:0')

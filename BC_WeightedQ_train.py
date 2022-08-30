@@ -18,8 +18,8 @@ epi_length = env.spec.max_episode_steps
 
 
 agent = BC_agent(state_dim,action_dim,args)
-agent.init_bc("./model_save/bc/bc2_"+args.task_name+"_80.pt")
-agent.init_q("./model_save/bc_q/bc2_"+args.task_name+"cqlTrue_"+"60000.pt")
+agent.init_bc("./model_save/bc/bc1_"+args.task_name+"_60.pt")
+agent.init_q("./model_save/bc_q/bc1_"+args.task_name+"cqlFalse_"+"60000.pt")
 #agent.init_bc("./model_save/bc_wq/bc_wq_halfcheetah-random-v2_600__123.pt")
 #agent.init_q("./model_save/bc_q_test/bc_"+args.task_name+"cqlTrue_"+"100000.pt")
 dataset = d4rl_dataset(env.unwrapped)

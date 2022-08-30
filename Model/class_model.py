@@ -367,6 +367,14 @@ class SAC_CQL_Agent:
             for target_param, param in zip(self.target_q2.parameters(), self.q2.parameters()):
                 target_param.data.copy_(target_param.data * (1.0 - self.args.SAC_tau) + param.data * self.args.SAC_tau)
 
+    def test_q(self,batch):
+        state_batch, action_batch, reward_batch, next_state_batch, done_batch = batch
+        state_batch = torch.FloatTensor(state_batch).to(self.args.device_train)
+        action_batch = torch.FloatTensor(action_batch).to(self.args.device_train)
+        with torch.no_grad():
+            q_val1, q_val2 = self.q1(state_batch, action_batch), self.q2(state_batch, action_batch)
+        return q_val1, q_val2
+
 
 
 class TD3_Agent:
@@ -695,7 +703,7 @@ class BC_agent:
     def alpha_train(self,state_batch):
         self.alpha_opt.zero_grad()
         _, log_pi = self.bc(state_batch)
-        target_entropy = -(self.a_dim/2.0)
+        target_entropy = -(self.a_dim/1.0)
         alpha_loss = (torch.exp(self.log_alpha)*(-log_pi - target_entropy)).mean()
         alpha_loss.backward()
         self.alpha_opt.step()
@@ -739,7 +747,8 @@ class BC_agent:
         reward_batch = torch.FloatTensor(reward_batch).to(self.args.device_train)
         next_state_batch = torch.FloatTensor(next_state_batch).to(self.args.device_train)
         done_batch = torch.FloatTensor(done_batch).to(self.args.device_train)
-        self.q_train_cql(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+        # self.q_train_cql(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
+        self.q_train(state_batch, action_batch, reward_batch, next_state_batch, done_batch)
 
         if (self.update_count % 2.0) == 0:
             with torch.no_grad():
@@ -774,13 +783,11 @@ class BC_agent:
         self.q1_opt.zero_grad()
         self.q2_opt.zero_grad()
         q_val1,q_val2 = self.q1(state_batch,action_batch), self.q2(state_batch,action_batch)
-        # reward_batch, done_batch = reward_batch.reshape(q_val1.shape[0]), done_batch.reshape(q_val1.shape[0])
         with torch.no_grad():
-            noise = (torch.randn_like(action_batch) * 0.2).clamp(-0.5, 0.5)
-            next_action_batch = (self.bc(next_state_batch) + noise).clamp(-1.,1.)
+            next_action_batch, next_log_pi = self.bc(next_state_batch)
             next_q_val1, next_q_val2 = self.target_q1(next_state_batch,next_action_batch), self.target_q2(next_state_batch,next_action_batch)
             minq = torch.min(next_q_val1,next_q_val2)
-            target_ = reward_batch + self.gamma*(1-done_batch)*minq
+            target_ = reward_batch + self.gamma * (1 - done_batch) * (minq - torch.exp(self.log_alpha) * next_log_pi)
 
         q1_loss = F.mse_loss(target_,q_val1)
         q2_loss = F.mse_loss(target_,q_val2)
@@ -791,8 +798,6 @@ class BC_agent:
         self.q2_opt.step()
 
     def q_train_cql(self,state_batch,action_batch,reward_batch,next_state_batch,done_batch):
-        self.q1_opt.zero_grad()
-        self.q2_opt.zero_grad()
         q_val1,q_val2 = self.q1(state_batch,action_batch), self.q2(state_batch,action_batch)
         with torch.no_grad():
             next_action_batch, next_log_pi = self.bc(next_state_batch)
@@ -809,8 +814,8 @@ class BC_agent:
         #====여까지는 그냥 SAC랑 같음
         batch_size = action_batch.shape[0]
         action_dim = action_batch.shape[-1]
-        cql_random_actions = action_batch.new_empty((batch_size, self.cql_n_actions, action_dim),requires_grad=False).uniform_(-1, 1)
-
+        # cql_random_actions = action_batch.new_empty((batch_size, self.cql_n_actions, action_dim),requires_grad=False).uniform_(-1, 1)
+        cql_random_actions = torch.randn((batch_size, self.cql_n_actions, action_dim),requires_grad=False).uniform_(-1,1).to(action_batch.device)
 
         cql_current_actions, cql_current_log_pis  = self.bc(state_batch, repeat=self.cql_n_actions)
         cql_next_actions, cql_next_log_pis    = self.bc(next_state_batch, repeat=self.cql_n_actions)
@@ -823,6 +828,7 @@ class BC_agent:
         cql_q2_current_actions = self.q2(state_batch, cql_current_actions)
         cql_q1_next_actions = self.q1(state_batch, cql_next_actions)
         cql_q2_next_actions = self.q2(state_batch , cql_next_actions)
+
 
         cql_cat_q1 = torch.cat(
             [cql_q1_rand, torch.unsqueeze(q_val1, 1), cql_q1_next_actions, cql_q1_current_actions], dim=1
@@ -877,14 +883,19 @@ class BC_agent:
             cql_min_qf1_loss = cql_qf1_diff * self.cql_min_q_weight
             cql_min_qf2_loss = cql_qf2_diff * self.cql_min_q_weight
 
+
         q1_loss_add_cql =  q1_loss + cql_min_qf1_loss
         q2_loss_add_cql =  q2_loss + cql_min_qf2_loss
 
-
+        self.q1_opt.zero_grad()
         q1_loss_add_cql.backward(retain_graph=True)
         self.q1_opt.step()
+        self.q2_opt.zero_grad()
         q2_loss_add_cql.backward()
         self.q2_opt.step()
+
+
+
 
 
 

@@ -18,8 +18,8 @@ epi_length = env.spec.max_episode_steps
 
 
 agent = BC_agent(state_dim,action_dim,args)
-agent.init_bc("./model_save/bc/bc_"+args.task_name+"_100.pt")
-agent.init_q("./model_save/bc_q/bc_"+args.task_name+"cqlTrue_"+"100000.pt")
+agent.init_bc("./model_save/bc/bc1_"+args.task_name+"_60.pt")
+agent.init_q("./model_save/bc_q/bc1_"+args.task_name+"cqlFalse_"+"60000.pt")
 dataset = d4rl_dataset(env.unwrapped)
 
 
@@ -66,6 +66,8 @@ while local_step <=maximum_step:
 
   if episode_step % 20 == 19:
     torch.save({'policy': agent.bc.state_dict(),
+                'q1': agent.q1.state_dict(),
+                'q2': agent.q2.state_dict(),
                 }, "./model_save/bc_iwq/bc_iwq_"+args.task_name+ str(episode_step + 1) + ".pt")
 
 
